@@ -360,7 +360,11 @@ if not df_base.empty:
                     elif val < 0: return 'background-color: #fce4d6; color: #c65911; font-weight: bold;'
                 return ''
                 
-            styled_df = summary_df.style.applymap(style_cells, subset=highlight_cols)
+            # Универсальный фикс: если есть новый .map — используем его, иначе откатываемся на старый .applymap
+if hasattr(summary_df.style, 'map'):
+    styled_df = summary_df.style.map(style_cells, subset=highlight_cols)
+else:
+    styled_df = summary_df.style.applymap(style_cells, subset=highlight_cols)
             
             # Выводим адаптивную таблицу
             st.dataframe(styled_df, use_container_width=True, hide_index=True, column_config=column_config)
