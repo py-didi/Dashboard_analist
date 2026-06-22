@@ -203,7 +203,6 @@ if not df_base.empty:
     with col_m_choice:
         chosen_metrics = st.multiselect("Столбцы метрик в таблице:", options=all_metrics, key="metrics_widget")
     with col_spark_choice:
-        # Теперь спарклайн можно добавить К ЛЮБОМУ из выбранных столбцов
         sparkline_metrics = st.multiselect("Включить график-спарклайн к полям:", options=chosen_metrics, default=[])
     with col_lfl_choice:
         lfl_modes = st.multiselect(
@@ -258,7 +257,6 @@ if not df_base.empty:
                 
                 sku_info[f"{metric} (Старт: {start_label})"] = round(val_start, 2)
                 
-                # Если запрошен спарклайн — генерируем массив точек для тренда
                 if metric in sparkline_metrics:
                     sku_info[f"{metric} (Тренд)"] = [round(float(x), 2) for x in group[metric].tolist()]
                     
@@ -322,7 +320,6 @@ if not df_base.empty:
         if not summary_df.empty:
             st.markdown(f"### 📋 Результаты сводного анализа матрицы ({len(summary_df)} шт.)")
             
-            # --- УМНЫЙ КОНФИГУРАТОР КОЛОНОК (ШИРИНА И ПЕРЕНОС ТЕКСТА) ---
             column_config = {
                 "Артикул продавца": st.column_config.TextColumn("Артикул", width="small"),
                 "Группа": st.column_config.TextColumn("Группа", width="small"),
@@ -331,21 +328,17 @@ if not df_base.empty:
                 "Бренд": st.column_config.TextColumn("Бренд", width="small")
             }
             
-            # Настраиваем спарклайны
             for metric in sparkline_metrics:
                 column_config[f"{metric} (Тренд)"] = st.column_config.LineChartColumn(f"📈 {metric}", width="medium")
                 
-            # Компактный рендеринг числовых заголовков
             for col in summary_df.columns:
                 if any(k in col for k in ["Динамика", "Старт:", "Конец:", "DoD", "WoW"]) and "Тренд" not in col:
                     if pd.api.types.is_numeric_dtype(summary_df[col]):
-                        # Сжатие длинных фраз в целях тотальной экономии места
                         short_title = col.replace(" (предыдущий период)", " (пред. пер.)") \
                                          .replace(" (Динамика)", " Δ") \
                                          .replace("День к дню ", "") \
                                          .replace("Неделя к неделе ", "")
                         
-                        # Передаем короткое имя в label, а width="small" (или число 100) заставляет текст переноситься!
                         column_config[col] = st.column_config.NumberColumn(
                             label=short_title, 
                             format="%.2f", 
@@ -360,13 +353,12 @@ if not df_base.empty:
                     elif val < 0: return 'background-color: #fce4d6; color: #c65911; font-weight: bold;'
                 return ''
                 
-            # Универсальный фикс: если есть новый .map — используем его, иначе откатываемся на старый .applymap
-if hasattr(summary_df.style, 'map'):
-    styled_df = summary_df.style.map(style_cells, subset=highlight_cols)
-else:
-    styled_df = summary_df.style.applymap(style_cells, subset=highlight_cols)
+            # ЖЕСТКИЙ ФИКС СОВМЕСТИМОСТИ ДЛЯ ОБЛАКА И ЛОКАЛКИ
+            if hasattr(summary_df.style, 'map'):
+                styled_df = summary_df.style.map(style_cells, subset=highlight_cols)
+            else:
+                styled_df = summary_df.style.applymap(style_cells, subset=highlight_cols)
             
-            # Выводим адаптивную таблицу
             st.dataframe(styled_df, use_container_width=True, hide_index=True, column_config=column_config)
             
             # ЭКСПОРТ В EXCEL
