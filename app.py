@@ -9,7 +9,7 @@ import io
 
 # Настройка страницы на максимальную ширину экрана
 st.set_page_config(
-    page_title="WB ERP: Анализ Матрицы и Группировка",
+    page_title="WB Улучшенная воронка продаж",
     page_icon="📊",
     layout="wide"
 )
